@@ -1,7 +1,7 @@
 """Like-wachter voor @TheFomoDoctor.
 Kijkt of er nieuwe likes zijn en drukt dan op de startknop van het brein (Claude scheduled task).
 Bewaart alleen hashes van gezien likes (deze repo is openbaar; likes zijn privé). Print nooit tweet-ids."""
-import hashlib, json, os, sys, time, urllib.request
+import urllib.error, hashlib, json, os, sys, time, urllib.request
 
 USER_ID = "2108518365023141888"            # @TheFomoDoctor
 FIRE_URL = "https://api.anthropic.com/v1/claude_code/routines/trig_01BAxnJfMZ9R1dJVVR3pQc8J/fire"
@@ -16,8 +16,11 @@ def h(x):
 def get_likes():
     req = urllib.request.Request(f"https://api.x.com/2/users/{USER_ID}/liked_tweets?max_results=10",
                                  headers={"Authorization": "Bearer " + os.environ["X_BEARER"].strip().removeprefix("Bearer ").strip()})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return [t["id"] for t in json.load(r).get("data", [])]
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return [t["id"] for t in json.load(r).get("data", [])]
+    except urllib.error.HTTPError as e:
+        print("X fout:", e.code, e.read().decode()[:300]); raise
 
 
 def fire(n):

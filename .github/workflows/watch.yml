@@ -1,0 +1,27 @@
+name: Like-wachter
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+concurrency:
+  group: watch
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          X_BEARER: ${{ secrets.X_BEARER }}
+          CLAUDE_FIRE_TOKEN: ${{ secrets.CLAUDE_FIRE_TOKEN }}
+        run: python3 watch.py
+      - run: |
+          git config user.name "fomo-watcher"
+          git config user.email "fomo-watcher@users.noreply.github.com"
+          git add state.json
+          git diff --cached --quiet && exit 0
+          git commit -qm "state"
+          git push

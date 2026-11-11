@@ -15,7 +15,7 @@ def h(x):
 
 def get_likes():
     req = urllib.request.Request(f"https://api.x.com/2/users/{USER_ID}/liked_tweets?max_results=10",
-                                 headers={"Authorization": "Bearer " + os.environ["X_BEARER"]})
+                                 headers={"Authorization": "Bearer " + os.environ["X_BEARER"].strip().removeprefix("Bearer ").strip()})
     with urllib.request.urlopen(req, timeout=30) as r:
         return [t["id"] for t in json.load(r).get("data", [])]
 
@@ -23,7 +23,7 @@ def get_likes():
 def fire(n):
     body = json.dumps({"text": f"{n} nieuwe like(s) van Valentijn. Verwerk ze volgens je instructies."}).encode()
     req = urllib.request.Request(FIRE_URL, data=body, method="POST", headers={
-        "Authorization": "Bearer " + os.environ["CLAUDE_FIRE_TOKEN"],
+        "Authorization": "Bearer " + os.environ["CLAUDE_FIRE_TOKEN"].strip().removeprefix("Bearer ").strip(),
         "anthropic-version": "2023-06-01",
         "anthropic-beta": "experimental-cc-routine-2026-04-01",
         "content-type": "application/json"})

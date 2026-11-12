@@ -62,6 +62,8 @@ def main():
         new = []
     pending += len(new)
     print("nieuwe likes:", len(new), "| wachtend:", pending)
+    if os.environ.get("FORCE") == "true":  # handmatig: brein toch starten (bijv. overgeslagen likes opnieuw)
+        pending = max(pending, 1); st["last_fire"] = 0
     if pending and time.time() - st.get("last_fire", 0) > COOLDOWN_S:
         fire(pending)
         st["last_fire"], pending = time.time(), 0

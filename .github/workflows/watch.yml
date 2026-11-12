@@ -1,4 +1,6 @@
 name: Like-wachter
+# Blijft zelf wakker: kijkt elke 2 min naar nieuwe likes, ±5u45 lang, en start zichzelf daarna opnieuw.
+# De 5-minuten-planning is alleen reserve (als het herstarten een keer mislukt).
 on:
   schedule:
     - cron: "*/5 * * * *"
@@ -13,10 +15,11 @@ concurrency:
   cancel-in-progress: false
 permissions:
   contents: write
+  actions: write
 jobs:
   watch:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
       - env:
@@ -25,12 +28,22 @@ jobs:
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
           CLAUDE_FIRE_TOKEN: ${{ secrets.CLAUDE_FIRE_TOKEN }}
-          FORCE: ${{ inputs.force }}
-        run: python3 watch.py
-      - run: |
+          FORCE_FIRST: ${{ inputs.force }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
           git config user.name "fomo-watcher"
           git config user.email "fomo-watcher@users.noreply.github.com"
-          git add state.json
-          git diff --cached --quiet && exit 0
-          git commit -qm "state"
-          git push
+          end=$(( $(date +%s) + 345*60 ))
+          first=1
+          while [ "$(date +%s)" -lt "$end" ]; do
+            if [ "$first" = 1 ]; then export FORCE="$FORCE_FIRST"; first=0; else export FORCE=false; fi
+            python3 watch.py || echo "ronde mislukt, volgende keer opnieuw"
+            git add state.json
+            if ! git diff --cached --quiet; then
+              git commit -qm "state"
+              git pull -q --rebase && git push -q || echo "push mislukt"
+            fi
+            sleep 120
+          done
+          echo "klaar na ±5u45, start mezelf opnieuw"
+          gh workflow run watch.yml --ref main -R "$GITHUB_REPOSITORY"

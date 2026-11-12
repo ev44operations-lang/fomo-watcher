@@ -6,7 +6,7 @@ import urllib.error, hashlib, json, os, sys, time, urllib.request
 USER_ID = "2108518365023141888"            # @TheFomoDoctor
 FIRE_URL = "https://api.anthropic.com/v1/claude_code/routines/trig_01BAxnJfMZ9R1dJVVR3pQc8J/fire"
 STATE = "state.json"
-COOLDOWN_S = 8 * 60                         # niet vaker dan eens per 8 min starten (brein is dan nog bezig)
+COOLDOWN_S = 5 * 60                         # niet vaker dan eens per 5 min starten (brein is dan meestal klaar)
 
 
 def h(x):

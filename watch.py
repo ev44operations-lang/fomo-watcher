@@ -52,6 +52,38 @@ def fire(n, text=None):
         print("brein gestart:", r.status)
 
 
+def get_mentions(since_id):
+    """Nieuwe tags op @TheFomoDoctor (alleen nieuwe kosten iets). Geeft [(id, auteur-id)]."""
+    url = f"https://api.x.com/2/users/{USER_ID}/mentions"
+    params = {"max_results": "5", "tweet.fields": "author_id"}
+    if since_id:
+        params["since_id"] = since_id
+    qs = "&".join(f"{k}={v}" for k, v in params.items())
+    req = urllib.request.Request(url + "?" + qs, headers={"Authorization": oauth1("GET", url, params)})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return [(t["id"], t.get("author_id")) for t in json.load(r).get("data", [])]
+
+
+def check_tags(st):
+    """Snelle route voor tags (13 nov): nieuwe tag → brein meteen starten (niet pas bij de uur-check)."""
+    try:
+        new = get_mentions(st.get("mention_since"))
+    except Exception as e:
+        print("tags lezen mislukt:", type(e).__name__); return
+    if not new:
+        return
+    first = not st.get("mention_since")
+    st["mention_since"] = max(new, key=lambda x: int(x[0]))[0]
+    new = [m for m in new if m[1] != USER_ID]
+    if first or not new:
+        print("tags: beginpunt gezet" if first else "tags: alleen eigen"); return
+    print("nieuwe tags:", len(new))
+    fire(0, f"TAG: {len(new)} nieuwe tag(s)/mention(s) op @TheFomoDoctor. Iemand roept ons op: antwoord ZO SNEL MOGELIJK. "
+            "Sla likes en wekker over. Start metrics.yml (±90 s, git pull), beantwoord alle mentions met replied: false volgens "
+            "BREIN.md stap 1c via de wachtrij (reply_mention, scheduled_at = nu), met kaartje als er een wallet of claim in staat "
+            "(geen adres in de tekst tot en met 19 nov), en start daarna meteen publish.yml. Log met bron \"tag-snel\".")
+
+
 def main():
     st = json.load(open(STATE)) if os.path.exists(STATE) else {}
     seen, pending = set(st.get("seen", [])), int(st.get("pending", 0))
@@ -69,6 +101,7 @@ def main():
     if pending and time.time() - st.get("last_fire", 0) > COOLDOWN_S:
         fire(pending)
         st["last_fire"], pending = time.time(), 0
+    check_tags(st)
     st.update(seen=sorted(seen)[-200:], pending=pending)
     json.dump(st, open(STATE, "w"))
 

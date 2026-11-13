@@ -61,11 +61,11 @@ def main():
     if not topic:
         print("wekker: geen NTFY_TOPIC, sla over"); return
     st = json.load(open(STATE)) if os.path.exists(STATE) else {}
-    if os.environ.get("WEKKER_TEST") == "true":
-        push(topic, "Test: Dr Fomo wekker werkt", ["Vanaf nu krijg je hier een seintje bij verse posts om te liken."], [])
+    test = os.environ.get("WEKKER_TEST") == "true"   # echte melding nu, ruimere grenzen, telt niet als 'gezien'
+    fresh_min = 180 if test else FRESH_MIN
     now = datetime.now(timezone.utc)
     nl = now.astimezone(ZoneInfo("Europe/Amsterdam"))
-    if not (9 <= nl.hour < 23) or time.time() - st.get("last_scan", 0) < SCAN_EVERY_S:
+    if not test and (not (9 <= nl.hour < 23) or time.time() - st.get("last_scan", 0) < SCAN_EVERY_S):
         return
     st["last_scan"] = time.time()
     seen, fresh = set(st.get("seen", [])), []
@@ -76,7 +76,7 @@ def main():
             print("wekker: kanaal mislukt", ch, type(e).__name__); continue
         for it in items:
             age = (now - it["time"]).total_seconds() / 60
-            if age > FRESH_MIN or h(it["tg"]) in seen:
+            if age > fresh_min or (h(it["tg"]) in seen and not test):
                 continue
             sc = score(it)
             if sc >= 2:
@@ -85,15 +85,16 @@ def main():
     fresh.sort(key=lambda i: (-i["sc"], i["age"]))
     strong = any(i["sc"] >= STRONG for i in fresh)
     print("wekker: verse posts", len(fresh), "| sterk:", strong)
-    if (len(fresh) >= MIN_NEW or strong) and time.time() - st.get("last_push", 0) > COOLDOWN_S:
+    if test or ((len(fresh) >= MIN_NEW or strong) and time.time() - st.get("last_push", 0) > COOLDOWN_S):
         lines, actions = [], []
         for i in fresh[:5]:
             url = f"https://x.com/{i['acc']}/status/{i['x_id']}" if i["x_id"] else f"https://x.com/{i['acc']}"
             lines.append(f"@{i['acc']} ({i['age']} min): {i['text'][:90]}\n{url}")
             actions.append({"action": "view", "label": f"@{i['acc']}"[:20], "url": url})
-        push(topic, f"Tijd om te liken: {len(fresh)} verse posts", lines, actions)
-        st["last_push"] = time.time()
-        seen |= {h(i["tg"]) for i in fresh}
+        push(topic, ("TEST · " if test else "") + f"Tijd om te liken: {len(fresh)} verse posts", lines, actions)
+        if not test:
+            st["last_push"] = time.time()
+            seen |= {h(i["tg"]) for i in fresh}
     st["seen"] = sorted(seen)[-400:]
     json.dump(st, open(STATE, "w"))
 

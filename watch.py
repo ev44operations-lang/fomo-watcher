@@ -39,8 +39,10 @@ def get_likes():
         print("X fout:", e.code, e.read().decode()[:300]); raise
 
 
-def fire(n):
-    body = json.dumps({"text": f"{n} nieuwe like(s) van Valentijn. Verwerk ze volgens je instructies."}).encode()
+def fire(n, text=None):
+    text = text or (f"{n} nieuwe like(s) van Valentijn. Verwerk ze volgens je instructies. Lees ook BREIN.md stap 1d-bis: "
+                    "geef bij de laatste tg-send.yml-start de input wekker mee (bijv. '2 replies klaar'), zodat Valentijn een ntfy-melding krijgt.")
+    body = json.dumps({"text": text}).encode()
     req = urllib.request.Request(FIRE_URL, data=body, method="POST", headers={
         "Authorization": "Bearer " + os.environ["CLAUDE_FIRE_TOKEN"].strip().removeprefix("Bearer ").strip(),
         "anthropic-version": "2023-06-01",

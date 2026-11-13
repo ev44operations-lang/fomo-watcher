@@ -86,12 +86,11 @@ def main():
     strong = any(i["sc"] >= STRONG for i in fresh)
     print("wekker: verse posts", len(fresh), "| sterk:", strong)
     if test or ((len(fresh) >= MIN_NEW or strong) and time.time() - st.get("last_push", 0) > COOLDOWN_S):
-        lines, actions = [], []
-        for i in fresh[:5]:
-            url = f"https://x.com/{i['acc']}/status/{i['x_id']}" if i["x_id"] else f"https://x.com/{i['acc']}"
-            lines.append(f"@{i['acc']} ({i['age']} min): {i['text'][:90]}\n{url}")
-            actions.append({"action": "view", "label": f"@{i['acc']}"[:20], "url": url})
-        push(topic, ("TEST · " if test else "") + f"Tijd om te liken: {len(fresh)} verse posts", lines, actions)
+        from watch import fire
+        accs = ", ".join(sorted({"@" + i["acc"] for i in fresh[:5]}))
+        fire(0, f"WEKKER: {len(fresh)} verse kanaal-posts ({accs}). Er zijn misschien geen nieuwe likes: stop dan NIET, "
+                "maar volg BREIN.md stap 1d-bis (beste verse tg_feed-items, max 3 replies, kanalen-dagpotje geldt, "
+                "bij de laatste tg-send.yml de input wekker meegeven). Log met bron \"wekker\".")
         if not test:
             st["last_push"] = time.time()
             seen |= {h(i["tg"]) for i in fresh}

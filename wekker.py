@@ -79,7 +79,8 @@ def main():
             if age > fresh_min or (h(it["tg"]) in seen and not test):
                 continue
             sc = score(it)
-            if sc >= 2:
+            # zelfde lat als het brein: alleen posts met een wallet of een harde $-claim in onze niche (anders maakt het brein niks)
+            if sc >= 4 and (it["addr"] or re.search(r"\$\d", it["text"])):
                 it.update(acc=acc, age=int(age), sc=sc)
                 fresh.append(it)
     fresh.sort(key=lambda i: (-i["sc"], i["age"]))

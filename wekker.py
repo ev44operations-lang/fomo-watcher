@@ -62,7 +62,7 @@ def main():
         print("wekker: geen NTFY_TOPIC, sla over"); return
     st = json.load(open(STATE)) if os.path.exists(STATE) else {}
     if os.environ.get("WEKKER_TEST") == "true":
-        push(topic, "🔔 Test: Dr Fomo wekker werkt", ["Vanaf nu krijg je hier een seintje bij verse posts om te liken."], [])
+        push(topic, "Test: Dr Fomo wekker werkt", ["Vanaf nu krijg je hier een seintje bij verse posts om te liken."], [])
     now = datetime.now(timezone.utc)
     nl = now.astimezone(ZoneInfo("Europe/Amsterdam"))
     if not (9 <= nl.hour < 23) or time.time() - st.get("last_scan", 0) < SCAN_EVERY_S:
@@ -91,7 +91,7 @@ def main():
             url = f"https://x.com/{i['acc']}/status/{i['x_id']}" if i["x_id"] else f"https://x.com/{i['acc']}"
             lines.append(f"@{i['acc']} ({i['age']} min): {i['text'][:90]}\n{url}")
             actions.append({"action": "view", "label": f"@{i['acc']}"[:20], "url": url})
-        push(topic, f"🔔 Tijd om te liken: {len(fresh)} verse posts", lines, actions)
+        push(topic, f"Tijd om te liken: {len(fresh)} verse posts", lines, actions)
         st["last_push"] = time.time()
         seen |= {h(i["tg"]) for i in fresh}
     st["seen"] = sorted(seen)[-400:]

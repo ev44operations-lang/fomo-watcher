@@ -90,7 +90,8 @@ def main():
         accs = ", ".join(sorted({"@" + i["acc"] for i in fresh[:5]}))
         fire(0, f"WEKKER: {len(fresh)} verse kanaal-posts ({accs}). Er zijn misschien geen nieuwe likes: stop dan NIET, "
                 "maar volg BREIN.md stap 1d-bis (beste verse tg_feed-items, max 3 replies, kanalen-dagpotje geldt, "
-                "bij de laatste tg-send.yml de input wekker meegeven). Log met bron \"wekker\".")
+                "bij de laatste tg-send.yml de input wekker meegeven). Log met bron \"wekker\"."
+                + (" TEST-RUN van Valentijn: gebruik deze keer items tot age_min < 180 en maak er minstens 1 (de beste)." if test else ""))
         if not test:
             st["last_push"] = time.time()
             seen |= {h(i["tg"]) for i in fresh}

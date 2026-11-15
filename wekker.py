@@ -17,6 +17,7 @@ FRESH_MIN = 45                # alleen posts jonger dan 45 min
 MIN_NEW = 3                   # zoveel verse posts = wekker
 STRONG = 5                    # 1 post met deze score = ook wekker
 COOLDOWN_S = 25 * 60          # max 1 wekker per 25 min (behalve test)
+FALLBACK_S = 2 * 3600         # 15 nov: na 2 uur zonder wekker toch het beste van wat er is klaarzetten
 
 
 def h(x):
@@ -68,7 +69,7 @@ def main():
     if not test and (not (9 <= nl.hour < 23) or time.time() - st.get("last_scan", 0) < SCAN_EVERY_S):
         return
     st["last_scan"] = time.time()
-    seen, fresh = set(st.get("seen", [])), []
+    seen, fresh, rest = set(st.get("seen", [])), [], []
     for ch, acc in CHANNELS.items():
         try:
             items = fetch(ch)
@@ -80,9 +81,11 @@ def main():
                 continue
             sc = score(it)
             # zelfde lat als het brein: alleen posts met een wallet of een harde $-claim in onze niche (anders maakt het brein niks)
+            it.update(acc=acc, age=int(age), sc=sc)
             if sc >= 4 and (it["addr"] or re.search(r"\$\d", it["text"])):
-                it.update(acc=acc, age=int(age), sc=sc)
                 fresh.append(it)
+            elif age <= 60:
+                rest.append(it)   # gewoon nieuws: reservebak voor als er lang niks goeds is
     fresh.sort(key=lambda i: (-i["sc"], i["age"]))
     strong = any(i["sc"] >= STRONG for i in fresh)
     print("wekker: verse posts", len(fresh), "| sterk:", strong)
@@ -96,6 +99,18 @@ def main():
         if not test:
             st["last_push"] = time.time()
             seen |= {h(i["tg"]) for i in fresh}
+    elif time.time() - st.get("last_push", 0) > FALLBACK_S and (fresh or rest):
+        # 15 nov (Valentijn): ook als alles matig is toch iets klaarzetten: het beste van wat er is.
+        from watch import fire
+        best = sorted(fresh + rest, key=lambda i: (-i["sc"], i["age"]))[:3]
+        accs = ", ".join(sorted({"@" + i["acc"] for i in best}))
+        fire(0, f"WEKKER (beste van wat er is): al {FALLBACK_S // 3600}+ uur geen sterke post. Kies uit de verse tg_feed-items "
+                f"(age_min < 60, o.a. {accs}) de 1–2 beste, OOK zonder wallet en OOK bij score < 4. Voeg iets toe met eigen data "
+                "(Polymarket-odds, Hyperliquid-koers/funding/liquidaties, wallet-bewegingen rond het nieuws) en maak een kaartje. "
+                "Stop dan NIET. Volg verder BREIN.md 1d-bis (kanalen-dagpotje, bij de laatste tg-send.yml de input wekker meegeven). "
+                "Log met bron \"wekker-reserve\".")
+        st["last_push"] = time.time()
+        seen |= {h(i["tg"]) for i in best}
     st["seen"] = sorted(seen)[-400:]
     json.dump(st, open(STATE, "w"))
 

@@ -14,7 +14,7 @@ NICHE = ("hyperliquid", "polymarket", "solana", "$sol", "pump.fun", "pumpfun", "
 STATE = "wekker.json"
 SCAN_EVERY_S = 10 * 60        # elke 10 min kijken
 FRESH_MIN = 45                # alleen posts jonger dan 45 min
-MIN_NEW = 3                   # zoveel verse posts = wekker
+MIN_NEW = 1                   # 15 nov: 1 goede verse post is genoeg (3 tegelijk kwam bijna nooit voor)
 STRONG = 5                    # 1 post met deze score = ook wekker
 COOLDOWN_S = 25 * 60          # max 1 wekker per 25 min (behalve test)
 FALLBACK_S = 2 * 3600         # 15 nov: na 2 uur zonder wekker toch het beste van wat er is klaarzetten
@@ -38,7 +38,9 @@ def fetch(ch):
         text = " ".join(text.split())
         xl = re.findall(r"(?:x|twitter)\.com/(\w+)/status/(\d+)", b)
         out.append({"tg": pid.group(1), "time": datetime.fromisoformat(tm.group(1)), "text": text,
-                    "x_id": xl[0][1] if xl else None, "addr": bool(re.search(r"0x[a-fA-F0-9]{40}", b))})
+                    "x_id": xl[0][1] if xl else None,
+                    # wallet = volledig adres, verkort adres (0xe813, 0x9f2a…3b1c) of een link naar een wallet-site
+                    "addr": bool(re.search(r"0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44}|\b0x[a-fA-F0-9]{4,8}\b|arkham|hypurrscan|solscan|debank|polymarket\.com/profile", b))})
     return out
 
 

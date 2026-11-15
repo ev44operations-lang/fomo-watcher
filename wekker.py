@@ -40,7 +40,8 @@ def fetch(ch):
         out.append({"tg": pid.group(1), "time": datetime.fromisoformat(tm.group(1)), "text": text,
                     "x_id": xl[0][1] if xl else None,
                     # wallet = volledig adres, verkort adres (0xe813, 0x9f2a…3b1c) of een link naar een wallet-site
-                    "addr": bool(re.search(r"0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44}|\b0x[a-fA-F0-9]{4,8}\b|arkham|hypurrscan|solscan|debank|polymarket\.com/profile", b))})
+                    "addr": bool(re.search(r"0x[a-fA-F0-9]{40}|\b[1-9A-HJ-NP-Za-km-z]{32,44}\b|\b0x[a-fA-F0-9]{4,8}\b", text)
+                                 or re.search(r"href=\"[^\"]*(arkm|arkham|hypurrscan|solscan|debank|polymarket\.com/profile)", b))})
     return out
 
 
